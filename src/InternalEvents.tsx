@@ -169,14 +169,13 @@ function wrap(handler: (event: KeyboardEvent) => void) {
  * performs actions for patterns that match the user defined `shortcut`.
  */
 function useShortcuts() {
-  const { actions, query, open, options } = useKBar((state) => ({
+  const { actions, query, open, options, currentRootActionId } = useKBar((state) => ({
     actions: state.actions,
-    open: state.visualState === VisualState.showing,
+    open: state.visualState !== VisualState.hidden,
+    currentRootActionId: state.currentRootActionId,
   }));
 
   React.useEffect(() => {
-    if (open) return;
-
     const actionsList = Object.keys(actions).map((key) => actions[key]);
 
     let actionsWithShortcuts: ActionImpl[] = [];
@@ -196,15 +195,23 @@ function useShortcuts() {
       const shortcut = action.shortcut!.join(" ");
 
       shortcutsMap[shortcut] = wrap((event: KeyboardEvent) => {
-        if (shouldRejectKeystrokes()) return;
+        if (shouldRejectKeystrokes(shortcut)) return;
 
         event.preventDefault();
-        if (action.children?.length) {
-          query.setCurrentRootAction(action.id);
+
+        if (currentRootActionId === action.id && open) {
+          // Close kbar when user choosed current action double time.
           query.toggle();
+          options.callbacks?.onClose?.();
+        } else if (action.children?.length) {
+          query.setCurrentRootAction(action.id);
+          // When action has children toggle only when kbar is hidden.
+          !open && query.toggle();
           options.callbacks?.onOpen?.();
         } else {
           action.command?.perform();
+          // When action doesn't have children toggle only when kbar is showing.
+          open && query.toggle();
           options.callbacks?.onSelectAction?.(action);
         }
       });
@@ -217,7 +224,7 @@ function useShortcuts() {
     return () => {
       unsubscribe();
     };
-  }, [actions, open, options.callbacks, query]);
+  }, [actions, open, options.callbacks, query, currentRootActionId]);
 }
 
 /**
