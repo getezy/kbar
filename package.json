@@ -6,6 +6,9 @@
   "files": [
     "lib/**"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "prepublishOnly": "npm run lint && npm run test && npm run build",
     "build": "rm -rf ./lib & tsc",
@@ -14,9 +17,6 @@
     "test": "jest src",
     "lint": "eslint src/**/* example/src/**/* --ext .js,.ts,.tsx",
     "typecheck": "tsc --noEmit"
-  },
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
   },
   "babel": {
     "presets": [
